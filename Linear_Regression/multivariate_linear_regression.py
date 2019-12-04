@@ -24,12 +24,12 @@ class linear_regression:
     def train(self, epochs, learning_rate=0.01):
         #Initialize random weights
         W = np.random.normal(size=self.n_features)
-        self.X_train = normalize(self.X_train)
+        self.X_train = self.normalize(self.X_train)
         for epoch in range(epochs):
             #Make the predictions
             yhat = np.dot(self.X_train, W.T)
             #compute loss
-            loss = least_aquare(self.X_train, self.y_train,yhat, W)
+            loss = self.least_aquare(self.X_train, self.y_train,yhat, W)
             #update weights using gradient descent
-            W = gradient_descent(self.X_train, self.y_train, yhat, W, learning_rate)
+            W = self.gradient_descent(self.X_train, self.y_train, yhat, W, learning_rate)
         return loss, W
