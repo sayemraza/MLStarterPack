@@ -1,3 +1,4 @@
+import numpy as np
 class linear_regression:
     def __init__(self, X_train, y_train, n_features):
         self.X_train = X_train
