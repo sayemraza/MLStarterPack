@@ -1,7 +1,7 @@
 class k_means:
   def __init__(self,x,k):
     self.x = x
-    self. k = k
+    self.k = k
   
   def get_cluster(self,centroids):
     centroid_assignment = {}
