@@ -14,17 +14,17 @@ def categorical_cross_entropy(y,pHat):
     loss = - sum(log_sum)/Y.shape[1]
     return loss
 
-def get_weights(W,pHat,y,learning_rate=0.1):
+def get_weights(W,pHat,y,learning_rate):
     gradient = np.dot(X.T,(pHat - y))
     avg_gradient = np.array(gradient)/Y.shape[0]
     avg_gradient = avg_gradient * learning_rate
     W = W-avg_gradient.T
     return W
 
-def train(epochs,n_class,n_features,X_train,Y_train):
+def train(epochs,n_class,n_features,X_train,Y_train,learning_rate=0.1):
   W = np.random.rand(n_class, n_features)
   for i in rangex(epochs):
       z = np.dot(X_train, W.T)
       pHat = softmax(z)
       yHat = np.array([np.argmax(i) for i in pHat])
-      W = get_weights(W,pHat,Y_train)
+      W = get_weights(W,pHat,Y_train,learning_rate)
