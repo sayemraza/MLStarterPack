@@ -12,9 +12,11 @@ class NeuralNetwork:
         self.Y_train  = Y_train
         self.n_features = self.X_train.shape[1]
         self.n_classes = self.Y_train.shape[1]
-        self.W1 = np.random.randn(self.n_features,5)
-        self.W2 = np.random.randn(5,6)
-        self.W3 = np.random.randn(6,self.n_classes)
+    
+    def initilize_weights(self):
+        self.W1 = np.random.normal(loc=0, scale=np.sqrt(2/self.n_features+self.n_classes), size=(self.n_features,5))
+        self.W2 = np.random.normal(loc=0, scale=np.sqrt(2/self.n_features+self.n_classes), size=(5,6))
+        self.W3 = np.random.normal(loc=0, scale=np.sqrt(2/self.n_features+self.n_classes), size=(6,self.n_classes))
         self.B1 = np.zeros((1,5))
         self.B2 = np.zeros((1,6))
         self.B3 = np.zeros((1,self.n_classes))
@@ -47,10 +49,16 @@ class NeuralNetwork:
         jac = np.diagflat(s) - np.dot(SM, SM.T)
         return list(jac.diagonal())
     
+    def gradient_clipping(self,x,threshold):
+        if np.linalg.norm(x) > threshold:
+            return (x * threshold/norm(x))
+        else:
+            return x
+    
     def categorical_cross_entropy(self,Y,phat):
         log_sum = []
         for i in range(Y.shape[0]):
-            log_sum.append(sum([a*np.log(b) for a,b in zip(Y[i],phat[i])]))
+            log_sum.append(sum([a*np.log(max(b, 1e-9)) for a,b in zip(Y[i],phat[i])]))
         loss = - sum(log_sum)/Y.shape[1]
         return loss
     
@@ -79,11 +87,26 @@ class NeuralNetwork:
         self.W2 -= d_weights2
         self.W3 -= d_weights3
         
-    def fit(self,epochs,learning_rate=0.01):
+    def fit(self,epochs,learning_rate=0.01,n_iterations=3000):
+        loss = []
+        weights = []
         for epoch in range(epochs):
-            params = self.feed_forward()
-            self.back_prop(params,learning_rate)
-            weights = {'W1':self.W1,'W2':self.W2,'W3':self.W3}
-            loss = params['loss']
-            if epoch%1000==0:
-                print(loss)
+            self.initilize_weights()
+            for n in range(n_iterations):
+                params = self.feed_forward()
+                self.back_prop(params,learning_rate)
+                weights.append({'W1':self.W1,'W2':self.W2,'W3':self.W3})
+                loss.append(params['loss'])
+            print('Epoch: ',epoch,'Loss: ',loss[np.argmin(loss)])
+            self.current_loss = loss[np.argmin(loss)]
+        self.min_loss = loss[np.argmin(loss)]
+        self.weights = weights[np.argmin(loss)]
+    def predict(self,X_test):
+        z1 = np.dot(X_test,self.W1)+self.B1
+        z2 = np.dot(self.ReLU(z1),self.W2)+self.B2
+        z3 = np.dot(self.ReLU(z2),self.W3)+self.B3
+        phat = self.softmax(z3)
+        print(phat)
+        ypred = np.array([np.argmax(i) for i in phat], dtype = np.uint8)
+        return ypred
+        
