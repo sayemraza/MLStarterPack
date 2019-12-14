@@ -31,16 +31,8 @@ class NeuralNetwork:
             yield (X[i:i + batchSize], y[i:i + batchSize])
     
     def ReLU(self,z):
-        relu = []
-        for arr in z:
-            r = []
-            for val in arr:
-                if val>0:
-                    r.append(val)
-                else:
-                    r.append(0)
-            relu.append(r)
-        return np.array(relu)
+        z = np.maximum(z, 0)
+        return z
 
     def reluDerivative(self,x):
         x[x<=0] = 0
