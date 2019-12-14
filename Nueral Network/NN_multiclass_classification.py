@@ -102,12 +102,7 @@ class NeuralNetwork:
             dw1_dash = 0
             dw2_dash = 0
             dw3_dash = 0
-        look_ahead1 = self.W1  + self.learning_rate * self.d_weights1
-        look_ahead2 = self.W2  + self.learning_rate * self.d_weights2
-        look_ahead3 = self.W3  + self.learning_rate * self.d_weights3
-        # evaluate dx_ahead (the gradient at x_ahead instead of at x)
-        v = mu * v - learning_rate * dx_ahead
-        x += v
+
         self.W1 -= self.learning_rate*dw1_dash + self.d_weights1
         self.W2 -= self.learning_rate*dw2_dash + self.d_weights2
         self.W3 -= self.learning_rate*dw3_dash + self.d_weights3
