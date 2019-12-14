@@ -41,10 +41,12 @@ class NeuralNetwork:
                     r.append(0)
             relu.append(r)
         return np.array(relu)
+
     def reluDerivative(self,x):
         x[x<=0] = 0
         x[x>0] = 1
         return x
+
     def softmax(self,z):
         result = []
         for each in z:
@@ -53,6 +55,7 @@ class NeuralNetwork:
             s_max = exp / exp_sum
             result.append(s_max)
         return np.array(result)
+
     def softmaxDerivative(self,s):
         SM = s.reshape((-1,1))
         jac = np.diagflat(s) - np.dot(SM, SM.T)
@@ -74,7 +77,7 @@ class NeuralNetwork:
         params = {'z1':z1,'z2':z2,'z3':z3,'phat':phat,'loss':loss}
         return params
     
-    def back_prop(self, params,learning_rate):
+    def back_prop(self, params):
         softmax_gradient = []
         for each in params['phat']:
             softmax_gradient.append(self.softmaxDerivative(each))
@@ -82,17 +85,32 @@ class NeuralNetwork:
         dz3 = np.dot(params['z2'].T, ((params['phat']-self.Y_mini_batch) * softmax_gradient))
         dz2 = np.dot(params['z1'].T,np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']))
         dz1 = np.dot(self.X_mini_batch.T,np.dot(np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']),self.W2.T))
-        self.d_weights1 = dz1*learning_rate
-        self.d_weights2 = dz2*learning_rate
-        self.d_weights3 = dz3*learning_rate
+        self.d_weights1 = dz1*self.learning_rate
+        self.d_weights2 = dz2*self.learning_rate
+        self.d_weights3 = dz3*self.learning_rate
         self.history['gradients'].append((self.d_weights1,self.d_weights2,self.d_weights3))
         self.gradient_descent()
 
-    def gradient_descent(self):
+    def gradient_descent(self, momentum=0.1):
         # update the weights with the derivative (slope) of the loss function
-        self.W1 -= self.d_weights1
-        self.W2 -= self.d_weights2
-        self.W3 -= self.d_weights3
+        # Use momentum = 0.1
+        try:
+            dw1_dash = self.history['gradients'][-2][0]
+            dw2_dash = self.history['gradients'][-2][1]
+            dw3_dash = self.history['gradients'][-2][2]
+        except:
+            dw1_dash = 0
+            dw2_dash = 0
+            dw3_dash = 0
+        look_ahead1 = self.W1  + self.learning_rate * self.d_weights1
+        look_ahead2 = self.W2  + self.learning_rate * self.d_weights2
+        look_ahead3 = self.W3  + self.learning_rate * self.d_weights3
+        # evaluate dx_ahead (the gradient at x_ahead instead of at x)
+        v = mu * v - learning_rate * dx_ahead
+        x += v
+        self.W1 -= self.learning_rate*dw1_dash + self.d_weights1
+        self.W2 -= self.learning_rate*dw2_dash + self.d_weights2
+        self.W3 -= self.learning_rate*dw3_dash + self.d_weights3
         self.history['weights'].append((self.W1,self.W2,self.W3))
         
     def fit(self,epochs,learning_rate=0.01, batchSize = 32):
@@ -105,7 +123,7 @@ class NeuralNetwork:
                 self.X_mini_batch = each[0]
                 self.Y_mini_batch = each[1]
                 params = self.feed_forward()
-                self.back_prop(params,learning_rate)
+                self.back_prop(params)
                 batch_loss.append(params['loss'])
             self.history['loss'].append(np.mean(batch_loss))
             if ((epoch+1)%100)==0:
