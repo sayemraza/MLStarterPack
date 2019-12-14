@@ -120,9 +120,8 @@ class NeuralNetwork:
                 params = self.feed_forward()
                 self.back_prop(params)
                 batch_loss.append(params['loss'])
-            self.history['loss'].append(np.mean(batch_loss))
-            if ((epoch+1)%100)==0:
-                print('Epoch: ',epoch+1, 'Loss: ',self.history['loss'][-1])
+            self.history['loss'].append(np.mean(batch_loss))           
+            print('Epoch: ',epoch+1, 'Loss: ',self.history['loss'][-1])
 
     def predict(self,X_test):
         z1 = np.dot(X_test,self.W1)+self.B1
