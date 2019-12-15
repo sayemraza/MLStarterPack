@@ -1,6 +1,11 @@
 import numpy as np
 class NeuralNetwork:
-    #Network Architecture
+    # Multi-class classification using softmax classifier and categorical-cross entropy loss function
+    # Optimizers:
+    #   1. Mini Batch gradient descent optimizer with momentum
+    #   2. Adagrad
+    #   3. Adam
+    # Network Architecture
     """
     L1 -> type = input, size = n_features
     L2 -> type = hidden, size = 5
@@ -18,6 +23,7 @@ class NeuralNetwork:
     def initialize_weights(self):
         """
         Xavier's initialization
+
         """
         self.W1 = np.random.normal(loc=0, scale=np.sqrt(2)*np.sqrt(2/(self.n_features+self.n_classes)), size=(self.n_features,5))
         self.W2 = np.random.normal(loc=0, scale=np.sqrt(2)*np.sqrt(2/(self.n_features+self.n_classes)), size=(5,6))
@@ -74,37 +80,70 @@ class NeuralNetwork:
         for each in params['phat']:
             softmax_gradient.append(self.softmaxDerivative(each))
         softmax_gradient = np.array(softmax_gradient)
-        dz3 = np.dot(params['z2'].T, ((params['phat']-self.Y_mini_batch) * softmax_gradient))
-        dz2 = np.dot(params['z1'].T,np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']))
-        dz1 = np.dot(self.X_mini_batch.T,np.dot(np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']),self.W2.T))
-        self.d_weights1 = dz1*self.learning_rate
-        self.d_weights2 = dz2*self.learning_rate
-        self.d_weights3 = dz3*self.learning_rate
-        self.history['gradients'].append((self.d_weights1,self.d_weights2,self.d_weights3))
-        self.gradient_descent()
+        self.dz3 = np.dot(params['z2'].T, ((params['phat']-self.Y_mini_batch) * softmax_gradient))
+        self.dz2 = np.dot(params['z1'].T,np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']))
+        self.dz1 = np.dot(self.X_mini_batch.T,np.dot(np.dot((params['phat']-self.Y_mini_batch) * softmax_gradient,self.W3.T)*self.reluDerivative(params['z2']),self.W2.T))
+        if self.optimizer == 'SGD':
+            self.gradient_descent()
+        elif self.optimizer == 'AdaGrad':
+            self.AdaGrad()
+        elif self.optimizer == 'Adam':
+            self.Adam()
 
     def gradient_descent(self, momentum=0.9):
         # update the weights with the derivative (slope) of the loss function
         # Use momentum = 0.9
+        self.d_weights1 = self.dz1*self.learning_rate
+        self.d_weights2 = self.dz2*self.learning_rate
+        self.d_weights3 = self.dz3*self.learning_rate
+        self.history['gradients'].append((self.d_weights1,self.d_weights2,self.d_weights3))
         try:
             dw1_dash = self.history['gradients'][-2][0]
             dw2_dash = self.history['gradients'][-2][1]
             dw3_dash = self.history['gradients'][-2][2]
         except:
-            dw1_dash = 0
-            dw2_dash = 0
-            dw3_dash = 0
-
-        self.W1 -= self.learning_rate*dw1_dash + self.d_weights1
-        self.W2 -= self.learning_rate*dw2_dash + self.d_weights2
-        self.W3 -= self.learning_rate*dw3_dash + self.d_weights3
+            dw1_dash, dw2_dash, dw3_dash = 0,0,0
+        self.W1 -= momentum*dw1_dash + self.d_weights1
+        self.W2 -= momentum*dw2_dash + self.d_weights2
+        self.W3 -= momentum*dw3_dash + self.d_weights3
         self.history['weights'].append((self.W1,self.W2,self.W3))
-        
-    def fit(self,epochs,learning_rate=0.01, batchSize = 32):
+
+    def AdaGrad(self, epsilon=1e-09):
+        self.history['gradients'].append((self.dz1,self.dz2,self.dz3))
+        self.l1, self.l2, self.l3 = 0,0,0
+        self.l1 += self.dz1*self.dz1
+        self.l2 += self.dz2*self.dz2
+        self.l3 += self.dz3*self.dz3
+        self.W1 -= self.learning_rate/np.sqrt(epsilon+self.l1)*self.dz1
+        self.W2 -= self.learning_rate/np.sqrt(epsilon+self.l2)*self.dz2
+        self.W3 -= self.learning_rate/np.sqrt(epsilon+self.l3)*self.dz3
+        self.history['weights'].append((self.W1,self.W2,self.W3))
+        self.history['gradients'].append((self.dz1,self.dz2,self.dz3))
+
+    def Adam(self, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-07):
+        self.history['gradients'].append((self.dz1,self.dz2,self.dz3))
+        m1,m2,m3,v1,v2,v3 = 0,0,0,0,0,0
+        m1 = beta1*m1 + (1-beta1)*self.dz1
+        v1 = beta2*v1 + (1-beta2)*self.dz1*self.dz1
+        m2 = beta1*m2 + (1-beta1)*self.dz2
+        v2 = beta2*v2 + (1-beta2)*self.dz2*self.dz2
+        m3 = beta1*m3 + (1-beta1)*self.dz3
+        v3 = beta2*v3 + (1-beta2)*self.dz3*self.dz3
+        m1hat = m1/(1-np.power(beta1,len(self.history['gradients'])))
+        m2hat = m2/(1-np.power(beta1,len(self.history['gradients'])))
+        m3hat = m3/(1-np.power(beta1,len(self.history['gradients'])))
+        v1hat = v1/(1-np.power(beta2,len(self.history['gradients'])))
+        v2hat = v2/(1-np.power(beta2,len(self.history['gradients'])))
+        v3hat = v3/(1-np.power(beta2,len(self.history['gradients'])))
+        self.W1 -= self.learning_rate*m1hat/np.sqrt(v1hat+epsilon)
+        self.W2 -= self.learning_rate*m2hat/np.sqrt(v2hat+epsilon)
+        self.W3 -= self.learning_rate*m3hat/np.sqrt(v3hat+epsilon)
+
+    def fit(self,epochs,learning_rate=0.01, batchSize = 32, optimizer = 'SGD'):
         self.learning_rate = learning_rate
+        self.optimizer = optimizer
         self.initialize_weights()
         for epoch in range(epochs):
-            # self.initialize_weights()
             batch_loss = []
             for each in self.next_batch(self.X_train, self.Y_train, batchSize):
                 self.X_mini_batch = each[0]
@@ -112,7 +151,7 @@ class NeuralNetwork:
                 params = self.feed_forward()
                 self.back_prop(params)
                 batch_loss.append(params['loss'])
-            self.history['loss'].append(np.mean(batch_loss))           
+            self.history['loss'].append(np.mean(batch_loss))
             print('Epoch: ',epoch+1, 'Loss: ',self.history['loss'][-1])
 
     def predict(self,X_test):
