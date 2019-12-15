@@ -83,9 +83,9 @@ class NeuralNetwork:
         self.history['gradients'].append((self.d_weights1,self.d_weights2,self.d_weights3))
         self.gradient_descent()
 
-    def gradient_descent(self, momentum=0.1):
+    def gradient_descent(self, momentum=0.9):
         # update the weights with the derivative (slope) of the loss function
-        # Use momentum = 0.1
+        # Use momentum = 0.9
         try:
             dw1_dash = self.history['gradients'][-2][0]
             dw2_dash = self.history['gradients'][-2][1]
