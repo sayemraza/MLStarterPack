@@ -38,8 +38,6 @@ class multinomial_logistic_regression:
             z = np.dot(self.X_train, self.W)
             pHat = self.softmax(z)
             self.loss = self.categorical_cross_entropy(self.y_train,pHat)
-            if i%100==0:
-                print(self.loss)
             self.W = self.update_weights(self.W,pHat,self.y_train, self.learning_rate)
     
     def predict(X_test):
